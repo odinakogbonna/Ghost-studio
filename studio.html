@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Browser Voice & Beat Studio</title>
+  
+  <!-- CDN Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lamejs@1.2.1/lame.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #121214;
+      --card-bg: #1e1e24;
+      --accent-color: #8a2be2;
+      --accent-hover: #9f40f5;
+      --text-color: #f0f0f5;
+      --subtext-color: #a0a0b0;
+      --border-color: #2e2e38;
+      --danger-color: #e53e3e;
+      --success-color: #38a169;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    header {
+      text-align: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: var(--subtext-color);
+      margin-top: 4px;
+    }
+
+    .section-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge {
+      background: var(--success-color);
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .file-input-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    input[type="file"] {
+      background-color: var(--bg-color);
+      border: 1px dashed var(--border-color);
+      padding: 10px;
+      border-radius: 8px;
+      color: var(--subtext-color);
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: #fff;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.btn-danger {
+      background-color: var(--danger-color);
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: var(--subtext-color);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    select, input[type="range"] {
+      width: 100%;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      border: 1px solid var(--border-color);
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .status-text {
+      font-size: 0.8rem;
+      color: var(--accent-hover);
+      text-align: center;
+      min-height: 1.2em;
+    }
+
+    /* Track Take Card Styling */
+    .take-card {
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .take-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .take-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .take-actions button {
+      padding: 4px 8px;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>SoundLab Studio Clone</h1>
+    <p>Multi-Take Vocal Recorder & Pitch Studio</p>
+  </header>
+
+  <!-- 1. Import Beat & Beat Generator Section -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>1. Import Beat & Generator</span> <span class="badge">✓</span>
+    </div>
+    
+    <div class="file-input-wrapper">
+      <label for="beatFileInput">Import Custom Beat (MP3/WAV):</label>
+      <input type="file" id="beatFileInput" accept="audio/*">
+    </div>
+
+    <div class="control-group">
+      <label for="genBeatSelect">Or Generate Synthetic Beat:</label>
+      <select id="genBeatSelect">
+        <option value="none" selected>None (Use Imported Beat File)</option>
+        <option value="easy">Easy Beat (Pop / 4-on-the-floor)</option>
+        <option value="hiphop">Hip-Hop Beat / Afrobeats Groove</option>
+      </select>
+    </div>
+
+    <div class="btn-grid">
+      <button id="playBeatBtn">▶️ Play Beat</button>
+      <button id="stopBeatBtn" class="btn-danger" disabled>⏹️ Stop Beat</button>
+    </div>
+  </div>
+
+  <!-- 2. Vocal Recorder Section -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>2. Record Vocals</span> <span class="badge">✓</span>
+    </div>
+    <div class="btn-grid">
+      <button id="recordBtn">🎙️ Start Recording</button>
+      <button id="stopBtn" class="btn-danger" disabled>⏹️ Stop Recording</button>
+    </div>
+    <div class="status-text" id="statusText">Ready</div>
+  </div>
+
+  <!-- 3. Recorded Voices & Individual Voice/Pitch Controls -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>3. Recorded Voices & Pitch Settings</span> <span class="badge">✓</span>
+    </div>
+    <div id="takesContainer" style="display:flex; flex-direction:column; gap:10px;">
+      <p style="font-size:0.8rem; color:var(--subtext-color);">No voice takes recorded yet.</p>
+    </div>
+  </div>
+
+  <!-- 4. Studio Effects Chain Section -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>4. Studio Mastering Chain</span> <span class="badge">✓</span>
+    </div>
+    
+    <div class="control-group">
+      <label for="reverbSlider">Reverb (Small Room):</label>
+      <input type="range" id="reverbSlider" min="0" max="1" step="0.05" value="0.2">
+    </div>
+
+    <div class="control-group">
+      <label for="eqHighSlider">EQ High (Clarity Boost):</label>
+      <input type="range" id="eqHighSlider" min="-12" max="12" step="1" value="3">
+    </div>
+
+    <div class="control-group">
+      <label for="eqLowSlider">EQ Low (Cut Muddiness):</label>
+      <input type="range" id="eqLowSlider" min="-12" max="12" step="1" value="-4">
+    </div>
+  </div>
+
+  <!-- 5. Playback & Export Section -->
+  <div class="section-card">
+    <div class="section-title">
+      <span>5. Playback & Export Mix</span> <span class="badge">✓</span>
+    </div>
+    <div class="btn-grid">
+      <button id="playBtn">▶️ Play Full Mix</button>
+      <button id="exportBtn">💾 Export MP3</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // State variables
+  let beatBuffer = null;
+  let synthLoop = null;
+  let activeBeatType = 'none'; // 'imported', 'easy', 'hiphop', or 'none'
+  
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let vocalTakes = []; // Array: { id, buffer, presetPitch, manualPitch, pitchNode }
+
+  // Tone.js Shared Effects Chain
+  let eqNode = null;
+  let compressorNode = null;
+  let reverbNode = null;
+  let limiterNode = null;
+
+  // DOM Elements
+  const beatFileInput = document.getElementById('beatFileInput');
+  const genBeatSelect = document.getElementById('genBeatSelect');
+  const playBeatBtn = document.getElementById('playBeatBtn');
+  const stopBeatBtn = document.getElementById('stopBeatBtn');
+  
+  const recordBtn = document.getElementById('recordBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const statusText = document.getElementById('statusText');
+  const takesContainer = document.getElementById('takesContainer');
+  
+  const reverbSlider = document.getElementById('reverbSlider');
+  const eqHighSlider = document.getElementById('eqHighSlider');
+  const eqLowSlider = document.getElementById('eqLowSlider');
+
+  const playBtn = document.getElementById('playBtn');
+  const exportBtn = document.getElementById('exportBtn');
+
+  // Initialize FX Chain
+  function initStudioChain() {
+    if (eqNode) return;
+
+    eqNode = new Tone.EQ3({
+      low: parseFloat(eqLowSlider.value),
+      mid: 0,
+      high: parseFloat(eqHighSlider.value),
+      lowFrequency: 250,
+      highFrequency: 4000
+    });
+
+    compressorNode = new Tone.Compressor({
+      threshold: -24,
+      ratio: 4,
+      attack: 0.005,
+      release: 0.1
+    });
+
+    reverbNode = new Tone.Freeverb({
+      dampening: 2000,
+      roomSize: parseFloat(reverbSlider.value)
+    });
+
+    limiterNode = new Tone.Limiter(-0.5);
+
+    // Chain: EQ -> Compressor -> Reverb -> Limiter -> Output
+    eqNode.chain(compressorNode, reverbNode, limiterNode, Tone.Destination);
+  }
+
+  // --- 1. BEAT IMPORT & GENERATION LOGIC ---
+  beatFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    statusText.innerText = "Loading beat file...";
+    const arrayBuffer = await file.arrayBuffer();
+    await Tone.start();
+    beatBuffer = await Tone.getContext().decodeAudioData(arrayBuffer);
+    activeBeatType = 'imported';
+    genBeatSelect.value = 'none';
+    statusText.innerText = "Beat file imported! Ready to play or record.";
+  });
+
+  genBeatSelect.addEventListener('change', (e) => {
+    if (e.target.value !== 'none') {
+      activeBeatType = e.target.value;
+      statusText.innerText = `Selected: ${e.target.options[e.target.selectedIndex].text}`;
+    } else if (beatBuffer) {
+      activeBeatType = 'imported';
+    } else {
+      activeBeatType = 'none';
+    }
+  });
+
+  function startBeatPlayback() {
+    stopBeatPlayback();
+
+    if (activeBeatType === 'imported' && beatBuffer) {
+      const beatPlayer = new Tone.Player(beatBuffer).toDestination();
+      beatPlayer.name = "activeBeatPlayer";
+      beatPlayer.start();
+    } else if (activeBeatType === 'easy' || activeBeatType === 'hiphop') {
+      Tone.Transport.bpm.value = activeBeatType === 'hiphop' ? 95 : 120;
+      
+      const kick = new Tone.MembraneSynth().toDestination();
+      const snare = new Tone.NoiseSynth({ volume: -12, envelope: { decay: 0.1 } }).toDestination();
+
+      synthLoop = new Tone.Loop((time) => {
+        if (activeBeatType === 'easy') {
+          kick.triggerAttackRelease("C1", "8n", time);
+        } else {
+          kick.triggerAttackRelease("C1", "8n", time);
+          kick.triggerAttackRelease("C1", "8n", time + Tone.Time("4n").toSeconds() + Tone.Time("8n").toSeconds());
+          snare.triggerAttackRelease("16n", time + Tone.Time("4n").toSeconds());
+        }
+      }, "2n").start(0);
+
+      Tone.Transport.start();
+    }
+  }
+
+  function stopBeatPlayback() {
+    Tone.Transport.stop();
+    Tone.Transport.cancel();
+    if (synthLoop) {
+      synthLoop.dispose();
+      synthLoop = null;
+    }
+  }
+
+  playBeatBtn.addEventListener('click', async () => {
+    await Tone.start();
+    if (activeBeatType === 'none' && !beatBuffer) {
+      alert("Please import a beat or select a generated beat option first.");
+      return;
+    }
+    startBeatPlayback();
+    playBeatBtn.disabled = true;
+    stopBeatBtn.disabled = false;
+    statusText.innerText = "▶️ Playing beat...";
+  });
+
+  stopBeatBtn.addEventListener('click', () => {
+    stopBeatPlayback();
+    playBeatBtn.disabled = false;
+    stopBeatBtn.disabled = true;
+    statusText.innerText = "Beat stopped.";
+  });
+
+  // --- 2. MULTI-TAKE VOCAL RECORDING LOGIC ---
+  recordBtn.addEventListener('click', async () => {
+    await Tone.start();
+    initStudioChain();
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      recordedChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+        const arrayBuffer = await blob.arrayBuffer();
+        const buffer = await Tone.getContext().decodeAudioData(arrayBuffer);
+        
+        const takeId = Date.now();
+        vocalTakes.push({
+          id: takeId,
+          buffer: buffer,
+          presetPitch: 0,
+          manualPitch: 0,
+          pitchNode: new Tone.PitchShift({ pitch: 0 }).connect(eqNode)
+        });
+
+        renderTakesList();
+        stopBeatPlayback();
+
+        statusText.innerText = `Voice Take #${vocalTakes.length} saved!`;
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        playBeatBtn.disabled = false;
+        stopBeatBtn.disabled = true;
+      };
+
+      mediaRecorder.start();
+      
+      // Auto start beat if available (Mic only captures voice)
+      if (activeBeatType !== 'none' || beatBuffer) {
+        startBeatPlayback();
+      }
+
+      recordBtn.disabled = true;
+      stopBtn.disabled = false;
+      statusText.innerText = "🎙️ Recording voice...";
+    } catch (err) {
+      alert("Microphone access required.");
+      console.error(err);
+    }
+  });
+
+  stopBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+  });
+
+  // --- 3. MULTI-VOICE TRACK LIST & INDIVIDUAL PITCH CONTROLS ---
+  function renderTakesList() {
+    if (vocalTakes.length === 0) {
+      takesContainer.innerHTML = `<p style="font-size:0.8rem; color:var(--subtext-color);">No voice takes recorded yet.</p>`;
+      return;
+    }
+
+    takesContainer.innerHTML = '';
+    vocalTakes.forEach((take, index) => {
+      const totalPitch = take.presetPitch + take.manualPitch;
+
+      const takeDiv = document.createElement('div');
+      takeDiv.className = 'take-card';
+      takeDiv.innerHTML = `
+        <div class="take-header">
+          <span>🎤 Voice Take #${index + 1}</span>
+          <div class="take-actions">
+            <button onclick="playTake(${take.id})">▶️ Listen</button>
+            <button class="btn-danger" onclick="deleteTake(${take.id})">🗑️ Delete</button>
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <label>Voice Changer Preset:</label>
+          <select onchange="updateTakePreset(${take.id}, this.value)">
+            <option value="0" ${take.presetPitch === 0 ? 'selected' : ''}>Deep Male (Your Natural) — Pitch 0</option>
+            <option value="2" ${take.presetPitch === 2 ? 'selected' : ''}>Light Male (Afrobeats) — Pitch +2</option>
+            <option value="4" ${take.presetPitch === 4 ? 'selected' : ''}>Teen Boy — Pitch +4</option>
+            <option value="-3" ${take.presetPitch === -3 ? 'selected' : ''}>Heavy Bass Male — Pitch -3</option>
+            <option value="5" ${take.presetPitch === 5 ? 'selected' : ''}>Soft Female — Pitch +5</option>
+            <option value="7" ${take.presetPitch === 7 ? 'selected' : ''}>Young Girl — Pitch +7</option>
+            <option value="6" ${take.presetPitch === 6 ? 'selected' : ''}>Adult Female — Pitch +6</option>
+            <option value="3" ${take.presetPitch === 3 ? 'selected' : ''}>Female Rapper (Heavy) — Pitch +3</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>
+            <span>Fine Pitch Shift (Semitones):</span>
+            <span>${totalPitch > 0 ? '+' + totalPitch : totalPitch}</span>
+          </label>
+          <input type="range" min="-12" max="12" step="1" value="${take.manualPitch}" 
+                 oninput="updateTakePitch(${take.id}, this.value)">
+        </div>
+      `;
+      takesContainer.appendChild(takeDiv);
+    });
+  }
+
+  window.updateTakePreset = function(id, presetVal) {
+    const take = vocalTakes.find(t => t.id === id);
+    if (take) {
+      take.presetPitch = parseInt(presetVal);
+      take.pitchNode.pitch = take.presetPitch + take.manualPitch;
+      renderTakesList();
+    }
+  };
+
+  window.updateTakePitch = function(id, pitchVal) {
+    const take = vocalTakes.find(t => t.id === id);
+    if (take) {
+      take.manualPitch = parseInt(pitchVal);
+      take.pitchNode.pitch = take.presetPitch + take.manualPitch;
+      renderTakesList();
+    }
+  };
+
+  window.playTake = async function(id) {
+    await Tone.start();
+    const take = vocalTakes.find(t => t.id === id);
+    if (take) {
+      const player = new Tone.Player(take.buffer).connect(take.pitchNode);
+      player.start();
+    }
+  };
+
+  window.deleteTake = function(id) {
+    vocalTakes = vocalTakes.filter(t => t.id !== id);
+    renderTakesList();
+  };
+
+  // Real-time Master FX Controls
+  reverbSlider.addEventListener('input', (e) => {
+    if (reverbNode) reverbNode.roomSize.value = parseFloat(e.target.value);
+  });
+  eqHighSlider.addEventListener('input', (e) => {
+    if (eqNode) eqNode.high.value = parseFloat(e.target.value);
+  });
+  eqLowSlider.addEventListener('input', (e) => {
+    if (eqNode) eqNode.low.value = parseFloat(e.target.value);
+  });
+
+  // --- 4. FULL MIX PLAYBACK & MP3 EXPORT ---
+  playBtn.addEventListener('click', async () => {
+    await Tone.start();
+    stopBeatPlayback();
+    initStudioChain();
+
+    // Start Beat
+    if (activeBeatType !== 'none' || beatBuffer) {
+      startBeatPlayback();
+    }
+
+    // Start all recorded vocal layers with their unique pitch/effects
+    vocalTakes.forEach(take => {
+      const player = new Tone.Player(take.buffer).connect(take.pitchNode);
+      player.start();
+    });
+
+    statusText.innerText = "▶️ Playing full song mix...";
+  });
+
+  exportBtn.addEventListener('click', async () => {
+    if (vocalTakes.length === 0 && !beatBuffer && activeBeatType === 'none') {
+      alert("Please record vocals or select a beat first.");
+      return;
+    }
+
+    statusText.innerText = "⏳ Rendering mix & encoding MP3...";
+
+    let duration = 5;
+    vocalTakes.forEach(take => {
+      if (take.buffer.duration > duration) duration = take.buffer.duration;
+    });
+    if (beatBuffer && beatBuffer.duration > duration) duration = beatBuffer.duration;
+
+    // Offline Graph Rendering
+    const offlineBuffer = await Tone.Offline(async () => {
+      const offlineLimiter = new Tone.Limiter(-0.5).toDestination();
+      const offlineReverb = new Tone.Freeverb({ roomSize: parseFloat(reverbSlider.value) }).connect(offlineLimiter);
+      const offlineCompressor = new Tone.Compressor({ threshold: -24, ratio: 4 }).connect(offlineReverb);
+      const offlineEQ = new Tone.EQ3({
+        low: parseFloat(eqLowSlider.value),
+        mid: 0,
+        high: parseFloat(eqHighSlider.value)
+      }).connect(offlineCompressor);
+
+      // Render Beat
+      if (activeBeatType === 'imported' && beatBuffer) {
+        const beatPlayer = new Tone.Player(beatBuffer).toDestination();
+        beatPlayer.start(0);
+      }
+
+      // Render Vocal Takes with per-track pitch shift
+      vocalTakes.forEach(take => {
+        const offlinePitch = new Tone.PitchShift({
+          pitch: take.presetPitch + take.manualPitch
+        }).connect(offlineEQ);
+
+        const vocalPlayer = new Tone.Player(take.buffer).connect(offlinePitch);
+        vocalPlayer.start(0);
+      });
+    }, duration);
+
+    encodeAudioBufferToMp3(offlineBuffer.get());
+  });
+
+  function encodeAudioBufferToMp3(audioBuffer) {
+    const channels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+    
+    const left = audioBuffer.getChannelData(0);
+    const right = channels > 1 ? audioBuffer.getChannelData(1) : left;
+
+    const sampleBlockSize = 1152;
+    const mp3Data = [];
+
+    const leftInt16 = new Int16Array(left.length);
+    const rightInt16 = new Int16Array(right.length);
+
+    for (let i = 0; i < left.length; i++) {
+      leftInt16[i] = left[i] < 0 ? left[i] * 0x8000 : left[i] * 0x7FFF;
+      rightInt16[i] = right[i] < 0 ? right[i] * 0x8000 : right[i] * 0x7FFF;
+    }
+
+    for (let i = 0; i < leftInt16.length; i += sampleBlockSize) {
+      const leftChunk = leftInt16.subarray(i, i + sampleBlockSize);
+      const rightChunk = rightInt16.subarray(i, i + sampleBlockSize);
+      
+      let mp3buf = channels === 2 ? mp3encoder.encodeBuffer(leftChunk, rightChunk) : mp3encoder.encodeBuffer(leftChunk);
+      if (mp3buf.length > 0) mp3Data.push(mp3buf);
+    }
+
+    const endBuf = mp3encoder.flush();
+    if (endBuf.length > 0) mp3Data.push(endBuf);
+
+    const blob = new Blob(mp3Data, { type: 'audio/mp3' });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'SoundLab_Studio_Mix.mp3';
+    downloadLink.click();
+
+    statusText.innerText = "✅ MP3 Exported to downloads!";
+  }
+</script>
+</body>
+</html>
